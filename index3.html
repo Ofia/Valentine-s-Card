@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>For My Valentine</title>
+    <style>
+        body {
+            margin: 0;
+            background: black;
+            overflow: hidden;
+            touch-action: none;
+            font-family: Georgia, serif;
+        }
+        .music-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+        iframe { border-radius: 12px; border: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="turtleCanvas"></canvas>
+
+    <div class="music-container">
+        <iframe width="300" height="80" 
+            src="https://bandcamp.com/EmbeddedPlayer/album=615592396/size=small/bgcol=333333/linkcol=fe7eaf/track=343929007/transparent=true/" 
+            seamless>
+        </iframe>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('turtleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let patterns = [];
+        let heartExplosions = [];
+        let texts = [];
+        let messages = ["You are beautiful", "You are so cool", "I love you", "You are amazing", "I miss you"];
+        
+        let startTextAlpha = 1;
+        let hasStarted = false;
+        const mainFont = "Georgia, serif";
+
+        // DRAWING UTILITIES
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = context.measureText(testLine);
+                if (metrics.width > maxWidth && n > 0) {
+                    context.fillText(line.trim(), x, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                } else { line = testLine; }
+            }
+            context.fillText(line.trim(), x, y);
+        }
+
+        function drawHeart(ctx, x, y, size) {
+            ctx.moveTo(x, y);
+            for (let a = 0; a < Math.PI * 2; a += 0.1) {
+                let hx = size * 16 * Math.pow(Math.sin(a), 3);
+                let hy = -size * (13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a));
+                ctx.lineTo(x + hx, y + hy);
+            }
+        }
+
+        function drawTriangle(ctx, x, size) {
+            ctx.moveTo(x, -size);
+            ctx.lineTo(x + size, size);
+            ctx.lineTo(x - size, size);
+            ctx.closePath();
+        }
+
+        // INTERACTION
+        function handleInteraction(e) {
+            if (e.cancelable) e.preventDefault();
+            let x = (e.type === 'touchstart') ? e.touches[0].clientX : e.clientX;
+            let y = (e.type === 'touchstart') ? e.touches[0].clientY : e.clientY;
+            
+            if (!hasStarted) hasStarted = true;
+            
+            let randomChoice = Math.random();
+            
+            if (randomChoice < 0.33) {
+                // 1. Spiral Pattern (RESTORED SHAPES & COLORS)
+                let shapes = ['circle', 'heart', 'square', 'triangle'];
+                patterns.push({
+                    x: x, y: y, step: 0, maxSteps: 250, 
+                    shapeType: shapes[Math.floor(Math.random() * shapes.length)],
+                    color: `hsl(${Math.random() * 360}, 70%, 60%)`
+                });
+            } else if (randomChoice < 0.66) {
+                // 2. Heart Explosion
+                for (let i = 0; i < 30; i++) {
+                    let angle = (Math.PI * 2 / 15) * i;
+                    let speed = 3 + Math.random() * 5; 
+                    heartExplosions.push({
+                        x: x, y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size: 25 + Math.random() * 25,
+                        alpha: 1,
+                        color: `hsl(${340 + Math.random() * 20}, 85%, 65%)`
+                    });
+                }
+            } else {
+                // 3. Emerging Text (READABLE & SMOOTH)
+                texts.push({
+                    x: x, y: y,
+                    message: messages[Math.floor(Math.random() * messages.length)],
+                    size: 10, 
+                    maxSize: window.innerWidth * 1.1, 
+                    alpha: 1,
+                    life: 50, 
+                    color: `hsl(${Math.random() * 360}, 70%, 85%)`
+                });
+            }
+        }
+
+        canvas.addEventListener('mousedown', handleInteraction);
+        canvas.addEventListener('touchstart', handleInteraction, {passive: false});
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (startTextAlpha > 0) {
+                if (hasStarted) startTextAlpha -= 0.015;
+                ctx.save();
+                ctx.globalAlpha = startTextAlpha;
+                ctx.fillStyle = '#FFB6C1';
+                ctx.textAlign = 'center';
+                ctx.font = `italic bold 28px ${mainFont}`;
+                wrapText(ctx, "Happy Valentine's my love.", canvas.width / 2, canvas.height / 2 - 40, canvas.width - 60, 35);
+                ctx.fillText("I miss you!", canvas.width / 2, canvas.height / 2 + 50);
+                ctx.font = '16px Arial';
+                ctx.fillText("Press play and then tap anywhere", canvas.width / 2, canvas.height / 2 + 110);
+                ctx.restore();
+            }
+            
+            // Draw Patterns
+            for (let p = patterns.length - 1; p >= 0; p--) {
+                let pattern = patterns[p];
+                if (pattern.step < pattern.maxSteps) {
+                    pattern.step += 0.6;
+                    ctx.strokeStyle = pattern.color;
+                    ctx.lineWidth = 0.3;
+                    let tempAngle = 0;
+                    for (let i = 0; i < pattern.step; i++) {
+                        ctx.save();
+                        ctx.translate(pattern.x, pattern.y);
+                        ctx.rotate(tempAngle * Math.PI / 180);
+                        let radius = i - 5;
+                        if (radius > 0) {
+                            ctx.beginPath();
+                            if (pattern.shapeType === 'circle') {
+                                ctx.arc(radius, 0, radius, 0, 2 * Math.PI);
+                            } else if (pattern.shapeType === 'heart') {
+                                drawHeart(ctx, radius, 0, radius / 20);
+                            } else if (pattern.shapeType === 'square') {
+                                ctx.rect(radius - radius/2, -radius/2, radius, radius);
+                            } else if (pattern.shapeType === 'triangle') {
+                                drawTriangle(ctx, radius, radius);
+                            }
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                        tempAngle += 7;
+                    }
+                } else { patterns.splice(p, 1); }
+            }
+
+            // Draw Heart Explosions
+            for (let h = heartExplosions.length - 1; h >= 0; h--) {
+                let heart = heartExplosions[h];
+                heart.x += heart.vx;
+                heart.y += heart.vy;
+                heart.alpha -= 0.018; 
+                if (heart.alpha > 0) {
+                    ctx.save();
+                    ctx.translate(heart.x, heart.y);
+                    ctx.globalAlpha = heart.alpha;
+                    ctx.fillStyle = heart.color;
+                    ctx.beginPath();
+                    drawHeart(ctx, 0, 0, heart.size / 20);
+                    ctx.fill();
+                    ctx.restore();
+                } else { heartExplosions.splice(h, 1); }
+            }
+
+            // Draw Emerging Text
+            for (let t = texts.length - 1; t >= 0; t--) {
+                let text = texts[t];
+                text.size *= 1.02; 
+                if (text.life > 0) { text.life--; } 
+                else { text.alpha -= 0.015; }
+
+                if (text.alpha > 0 && text.size < text.maxSize) {
+                    ctx.save();
+                    ctx.globalAlpha = text.alpha;
+                    ctx.fillStyle = text.color;
+                    ctx.font = `italic bold ${Math.floor(text.size)}px ${mainFont}`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(text.message, text.x, text.y);
+                    ctx.restore();
+                } else { texts.splice(t, 1); }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
