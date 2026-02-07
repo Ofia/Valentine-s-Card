@@ -48,7 +48,7 @@
         let patterns = [];
         let heartExplosions = [];
         let texts = [];
-        let messages = ["You are beautiful", "You are so cool", "I love you", "You are amazing", "I miss you"];
+        let messages = ["You are beautiful", "You are so cool", "I love you ❤️", "You are amazing", "I miss you", "Happy San Valentin"];
         
         let startTextAlpha = 1;
         let hasStarted = false;
@@ -146,10 +146,10 @@
                 ctx.fillStyle = '#FFB6C1';
                 ctx.textAlign = 'center';
                 ctx.font = `italic bold 28px ${mainFont}`;
-                wrapText(ctx, "Happy Valentine's my love.", canvas.width / 2, canvas.height / 2 - 40, canvas.width - 60, 35);
-                ctx.fillText("I miss you!", canvas.width / 2, canvas.height / 2 + 50);
+                wrapText(ctx, "Happy Valentine's my love.", canvas.width / 2, canvas.height / 2 - 50, canvas.width - 60, 35);
+                // ctx.fillText("I miss you!", canvas.width / 2, canvas.height / 2 + 50);
                 ctx.font = '16px Arial';
-                ctx.fillText("Press play and then tap anywhere", canvas.width / 2, canvas.height / 2 + 110);
+                ctx.fillText("Press play and then tap anywhere", canvas.width / 2, canvas.height / 2 + 50);
                 ctx.restore();
             }
             
